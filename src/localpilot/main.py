@@ -1,9 +1,9 @@
+from .cli import CLI
+
+
 def main():
-    print("LocalPilot")
-    print("Local AI Assistant")
-    print()
-    print("Type 'help' for available commands.")
-    print("Type 'exit' to quit.")
+    cli = CLI()
+    cli.run()
 
 
 if __name__ == "__main__":
