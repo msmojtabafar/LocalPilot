@@ -14,6 +14,7 @@ class CLI:
         self.registry.register("help", self.show_help)
         self.registry.register("status", self.show_status)
         self.registry.register("exit", self.exit)
+        self.registry.register("echo", self.echo)
 
     def run(self):
         print("LocalPilot")
@@ -25,26 +26,26 @@ class CLI:
 
         while self.running:
             try:
-                command = input("> ").strip().lower()
+                command = input("> ").strip()
 
                 if command:
-                    result = self.executor.execute(command)
-
-                    if result is None:
-                        print(f"Unknown command: {command}")
-                        print("Type 'help' for available commands.")
+                    self.handle_command(command)
 
             except (EOFError, KeyboardInterrupt):
                 print()
                 self.exit()
 
     def handle_command(self, command):
-        result = self.executor.execute(command)
+        parts = command.split()
+        name = parts[0].lower()
+        args = parts[1:]
 
-        if result is None:
-            print(f"Unknown command: {command}")
+        result = self.executor.execute(name, args)
+
+        if result is None and self.registry.get(name) is None:
+            print(f"Unknown command: {name}")
             print("Type 'help' for available commands.")
-            
+
     def show_help(self):
         print("Available commands:")
         for command in self.registry.commands():
@@ -52,6 +53,9 @@ class CLI:
 
     def show_status(self):
         print("LocalPilot is running.")
+
+    def echo(self, *args):
+        print(" ".join(args))
 
     def exit(self):
         self.running = False

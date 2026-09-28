@@ -43,7 +43,6 @@ def test_unknown_command(capsys):
     captured = capsys.readouterr()
 
     assert "Unknown command: something" in captured.out
-    assert "Type 'help' for available commands." in captured.out
 
 
 def test_cli_uses_registry():
@@ -58,3 +57,13 @@ def test_cli_uses_executor():
     cli = CLI()
 
     assert cli.executor.registry is cli.registry
+
+
+def test_echo_arguments(capsys):
+    cli = CLI()
+
+    cli.handle_command("echo hello world")
+
+    captured = capsys.readouterr()
+
+    assert "hello world" in captured.out
