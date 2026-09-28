@@ -24,12 +24,33 @@ class ProcessTool(Tool):
 
         try:
             for entry in os.listdir("/proc"):
-                if entry.isdigit():
-                    processes.append(int(entry))
+                if not entry.isdigit():
+                    continue
+
+                pid = int(entry)
+
+                try:
+                    name = self._get_process_name(pid)
+
+                    processes.append({
+                        "pid": pid,
+                        "name": name,
+                    })
+
+                except (
+                    FileNotFoundError,
+                    PermissionError,
+                    OSError,
+                ):
+                    continue
+
         except OSError:
             return []
 
-        return sorted(processes)
+        return sorted(
+            processes,
+            key=lambda process: process["pid"],
+        )
 
     def _get_process_info(self, pid):
         if pid is None:
@@ -41,13 +62,25 @@ class ProcessTool(Tool):
             if pid <= 0:
                 return None
 
-            with open(f"/proc/{pid}/comm", "r", encoding="utf-8") as file:
-                name = file.read().strip()
+            name = self._get_process_name(pid)
 
             return {
                 "pid": pid,
                 "name": name,
             }
 
-        except (ValueError, FileNotFoundError, PermissionError, OSError):
+        except (
+            ValueError,
+            FileNotFoundError,
+            PermissionError,
+            OSError,
+        ):
             return None
+
+    def _get_process_name(self, pid):
+        with open(
+            f"/proc/{pid}/comm",
+            "r",
+            encoding="utf-8",
+        ) as file:
+            return file.read().strip()
