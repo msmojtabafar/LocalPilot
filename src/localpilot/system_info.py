@@ -1,7 +1,6 @@
 import os
 import platform
 import socket
-import sys
 import shutil
 
 
@@ -39,3 +38,17 @@ class SystemInfo:
             }
         except OSError:
             return None
+
+    def get_local_ip(self):
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+                sock.connect(("8.8.8.8", 80))
+                return sock.getsockname()[0]
+        except OSError:
+            return None
+
+    def get_network_interfaces(self):
+        try:
+            return socket.if_nameindex()
+        except OSError:
+            return []
