@@ -44,3 +44,17 @@ def test_unknown_command(capsys):
 
     assert "Unknown command: something" in captured.out
     assert "Type 'help' for available commands." in captured.out
+
+
+def test_cli_uses_registry():
+    cli = CLI()
+
+    assert "help" in cli.registry.commands()
+    assert "status" in cli.registry.commands()
+    assert "exit" in cli.registry.commands()
+
+
+def test_cli_uses_executor():
+    cli = CLI()
+
+    assert cli.executor.registry is cli.registry
