@@ -2,6 +2,7 @@ import os
 import platform
 import socket
 import sys
+import shutil
 
 
 class SystemInfo:
@@ -27,3 +28,14 @@ class SystemInfo:
             return None
 
         return None
+
+    def get_disk(self):
+        try:
+            total, used, free = shutil.disk_usage("/")
+            return {
+                "total": total,
+                "used": used,
+                "free": free,
+            }
+        except OSError:
+            return None
