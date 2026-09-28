@@ -1,5 +1,6 @@
 from PySide6.QtCore import Qt, QThread, Signal
 from PySide6.QtGui import QFont
+from .response_formatter import ResponseFormatter
 from PySide6.QtWidgets import (
     QApplication,
     QHBoxLayout,
@@ -438,18 +439,9 @@ class LocalPilotGUI(QMainWindow):
 
         self.messages_layout.removeItem(item)
 
+
     def _format_response(self, response):
-        if isinstance(response, dict):
-            lines = []
-
-            for key, value in response.items():
-                lines.append(
-                    f"{key}: {value}"
-                )
-
-            return "\n".join(lines)
-
-        return str(response)
+        return ResponseFormatter.format(response)
 
     def closeEvent(self, event):
         if self.worker is not None:
