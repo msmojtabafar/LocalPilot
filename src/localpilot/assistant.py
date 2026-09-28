@@ -7,6 +7,7 @@ class LocalPilotAssistant:
         self.llm = llm
         self.tool_manager = tool_manager
         self.context = context or ConversationContext()
+
         self.tool_caller = AIToolCaller(
             self.llm,
             self.tool_manager,
@@ -16,7 +17,10 @@ class LocalPilotAssistant:
         if not message or not message.strip():
             return None
 
-        self.context.add_message("user", message)
+        self.context.add_message(
+            "user",
+            message,
+        )
 
         response = self.tool_caller.call(
             message,
@@ -32,6 +36,9 @@ class LocalPilotAssistant:
         )
 
         if isinstance(response, dict):
+            if response.get("confirmation_required"):
+                return response
+
             if "allowed" in response:
                 if not response["allowed"]:
                     return response.get(

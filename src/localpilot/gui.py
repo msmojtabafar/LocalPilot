@@ -6,6 +6,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QMainWindow,
+    QMessageBox,
     QPushButton,
     QScrollArea,
     QSizePolicy,
@@ -29,6 +30,35 @@ class AIWorker(QThread):
             response = f"خطا: {error}"
 
         self.finished.emit(response)
+
+
+class ConfirmWorker(QThread):
+    finished = Signal(object)
+
+    def __init__(self, assistant, tool, args):
+        super().__init__()
+        self.assistant = assistant
+        self.tool = tool
+        self.args = args
+
+    def run(self):
+        try:
+            result = self.assistant.tool_manager.execute(
+                self.tool,
+                args=self.args,
+                confirmed=True,
+            )
+
+            if (
+                isinstance(result, dict)
+                and "result" in result
+            ):
+                result = result["result"]
+
+        except Exception as error:
+            result = f"خطا: {error}"
+
+        self.finished.emit(result)
 
 
 class MessageWidget(QWidget):
@@ -62,7 +92,6 @@ class MessageWidget(QWidget):
                     padding: 12px 16px;
                 }
             """)
-
         else:
             label.setAlignment(
                 Qt.AlignLeft | Qt.AlignVCenter
@@ -101,7 +130,6 @@ class LocalPilotGUI(QMainWindow):
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
 
-        # Header
         header = QLabel("LocalPilot")
         header.setFont(
             QFont("DejaVu Sans", 18, QFont.Bold)
@@ -119,7 +147,6 @@ class LocalPilotGUI(QMainWindow):
 
         main_layout.addWidget(header)
 
-        # Chat area
         self.scroll = QScrollArea()
         self.scroll.setWidgetResizable(True)
         self.scroll.setFrameShape(QScrollArea.NoFrame)
@@ -141,7 +168,6 @@ class LocalPilotGUI(QMainWindow):
 
         main_layout.addWidget(self.scroll)
 
-        # Bottom
         bottom = QWidget()
 
         bottom_layout = QHBoxLayout(bottom)
@@ -150,6 +176,7 @@ class LocalPilotGUI(QMainWindow):
         )
 
         self.input = QLineEdit()
+
         self.input.setPlaceholderText(
             "پیام خود را بنویسید..."
         )
@@ -296,6 +323,46 @@ class LocalPilotGUI(QMainWindow):
 
         self._remove_last_message()
 
+        if (
+            isinstance(response, dict)
+            and response.get("confirmation_required")
+        ):
+            tool = response.get("tool", "")
+            args = response.get("args", [])
+
+            command_text = " ".join(
+                [tool] + [str(arg) for arg in args]
+            )
+
+            result = QMessageBox.question(
+                self,
+                "تأیید عملیات",
+                (
+                    "این عملیات نیاز به تأیید شما دارد.\n\n"
+                    f"عملیات:\n{command_text}\n\n"
+                    "آیا می‌خواهید ادامه دهید؟"
+                ),
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No,
+            )
+
+            if result == QMessageBox.Yes:
+                self._execute_confirmed(
+                    tool,
+                    args,
+                )
+                return
+
+            self._add_message(
+                "assistant",
+                "عملیات لغو شد.",
+            )
+
+            self.input.setFocus()
+            self._cleanup_worker()
+
+            return
+
         self._add_message(
             "assistant",
             self._format_response(response),
@@ -303,6 +370,52 @@ class LocalPilotGUI(QMainWindow):
 
         self.input.setFocus()
 
+        self._cleanup_worker()
+
+    def _execute_confirmed(self, tool, args):
+        if self.assistant is None:
+            return
+
+        self.waiting = True
+
+        self.input.setDisabled(True)
+        self.send_button.setDisabled(True)
+
+        self._add_message(
+            "assistant",
+            "در حال اجرای عملیات...",
+        )
+
+        self.worker = ConfirmWorker(
+            self.assistant,
+            tool,
+            args,
+        )
+
+        self.worker.finished.connect(
+            self._finish_confirmed
+        )
+
+        self.worker.start()
+
+    def _finish_confirmed(self, response):
+        self.waiting = False
+
+        self.input.setDisabled(False)
+        self.send_button.setDisabled(False)
+
+        self._remove_last_message()
+
+        self._add_message(
+            "assistant",
+            self._format_response(response),
+        )
+
+        self.input.setFocus()
+
+        self._cleanup_worker()
+
+    def _cleanup_worker(self):
         if self.worker is not None:
             self.worker.deleteLater()
             self.worker = None
