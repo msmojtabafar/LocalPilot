@@ -21,3 +21,16 @@ def test_execute_unknown_command():
     executor = CommandExecutor(registry)
 
     assert executor.execute("unknown") is None
+
+
+def test_execute_command_with_arguments():
+    registry = CommandRegistry()
+
+    def handler(*args):
+        return " ".join(args)
+
+    registry.register("echo", handler)
+
+    executor = CommandExecutor(registry)
+
+    assert executor.execute("echo", ["hello", "world"]) == "hello world"
