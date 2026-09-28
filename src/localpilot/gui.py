@@ -26,10 +26,18 @@ class LocalPilotGUI:
         )
 
         bottom = tk.Frame(self.root)
-        bottom.pack(fill=tk.X, padx=10, pady=(0, 10))
+        bottom.pack(
+            fill=tk.X,
+            padx=10,
+            pady=(0, 10),
+        )
 
         self.input = tk.Entry(bottom)
-        self.input.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self.input.pack(
+            side=tk.LEFT,
+            fill=tk.X,
+            expand=True,
+        )
         self.input.bind("<Return>", self._send)
 
         self.send_button = tk.Button(
@@ -37,7 +45,10 @@ class LocalPilotGUI:
             text="Send",
             command=self._send,
         )
-        self.send_button.pack(side=tk.RIGHT, padx=(10, 0))
+        self.send_button.pack(
+            side=tk.RIGHT,
+            padx=(10, 0),
+        )
 
     def _add_message(self, role, message):
         self.chat.configure(state="normal")
@@ -60,16 +71,30 @@ class LocalPilotGUI:
         response = self._get_response(message)
 
         if response is not None:
-            self._add_message("LocalPilot", response)
+            self._add_message(
+                "LocalPilot",
+                self._format_response(response),
+            )
 
     def _get_response(self, message):
         if self.assistant is None:
             return "LocalPilot is ready."
 
         try:
-            return self.assistant(message)
+            return self.assistant.respond(message)
         except Exception:
             return "An error occurred while processing your request."
+
+    def _format_response(self, response):
+        if isinstance(response, dict):
+            lines = []
+
+            for key, value in response.items():
+                lines.append(f"{key}: {value}")
+
+            return "\n".join(lines)
+
+        return str(response)
 
     def run(self):
         self.root.mainloop()
