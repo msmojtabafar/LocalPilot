@@ -17,3 +17,19 @@ def test_get_hostname():
     info = SystemInfo()
 
     assert info.get_hostname() != ""
+
+
+def test_get_cpu_count():
+    info = SystemInfo()
+
+    assert info.get_cpu_count() is not None
+    assert info.get_cpu_count() > 0
+
+
+def test_get_memory():
+    info = SystemInfo()
+
+    memory = info.get_memory()
+
+    assert memory is not None
+    assert memory > 0
